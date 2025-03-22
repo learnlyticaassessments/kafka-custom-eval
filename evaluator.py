@@ -8,7 +8,7 @@ from pathlib import Path
 from git import Repo
 
 # === CONFIGURATION ===
-SREPO_URL = "https://github.com/your-org/kafka-evaluator"  # Replace with your actual URL
+SREPO_URL = "https://github.com/learnlyticaassessments/kafka-assignment"  # Replace with your actual URL
 INPUT_CSV = "input.csv"
 REMOTE_PATH = "/home/ubuntu/opt/.kafka_envs/kafka_13ui/kafka-feb25-org-akhil-89/"  # Folder to copy from on each machine
 SSH_USER = "ubuntu"
