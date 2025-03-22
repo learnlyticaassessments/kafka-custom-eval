@@ -1,0 +1,41 @@
+name: Evaluate Kafka Assignment For Candidates
+
+on:
+  workflow_dispatch: {}
+  
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Evaluator Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run Evaluation
+      run: python evaluator.py
+
+    - name: Generate Excel Report
+      run: |
+        pip install pandas openpyxl
+        python create_excel_report.py
+      # Optional, if you have create_excel_report.py
+
+    - name: Upload Excel Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: evaluation-excel-report
+        path: evaluation_report.xlsx
+
+    - name: Upload Evaluation Results JSON
+      uses: actions/upload-artifact@v4
+      with:
+        name: evaluation-results-json
+        path: results/
