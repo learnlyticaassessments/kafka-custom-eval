@@ -1,0 +1,8 @@
+kafka-python==2.0.2
+testcontainers[kafka]==3.6.0
+pytest==8.3.5
+pytest-json-report==1.5.0
+GitPython==3.1.31
+requests==2.28.2
+pandas==1.5.3
+openpyxl==3.1.2
