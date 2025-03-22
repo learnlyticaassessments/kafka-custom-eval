@@ -36,6 +36,11 @@ jobs:
 
     - name: Run Evaluation
       run: python evaluator.py
+      
+    - name: Fix pandas/numpy compatibility
+      run: |
+        pip uninstall -y pandas numpy
+        pip install --no-cache-dir numpy pandas openpyxl
 
     - name: Generate Excel Report
       run: |
