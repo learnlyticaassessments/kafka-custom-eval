@@ -10,7 +10,7 @@ import traceback
 
 # === CONFIGURATION ===
 INPUT_CSV = "input.csv"
-REMOTE_PATH = "/home/ubuntu/opt/.kafka_envs/kafka_13ui/kafka-feb25-org-akhil-89/"  # Folder to copy from on each machine
+REMOTE_PATH = "/home/ubuntu/opt/.kafka_envs/kafka_13ui/kafka-feb25-org-akhil-89/"
 ASSIGNMENT_SUBDIR = "assignments"
 SSH_USER = "ubuntu"
 PEM_PATH = os.getenv("PEM_PATH", os.path.expanduser("~/.ssh/id_rsa"))
@@ -18,7 +18,7 @@ LOCAL_TESTS_DIR = os.path.join(os.getcwd(), "tests")
 
 # === LOGGING SETUP ===
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.DEBUG,  # Show all debug info
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[logging.StreamHandler()]
 )
@@ -110,20 +110,24 @@ def evaluate_assignment(candidate_id, assignment_file, eval_dir):
         report = json.load(f)
 
     try:
-        passed = report["summary"]["passed"]
-        total = report["summary"]["total"]
+        summary = report.get("summary", {})
+        passed = summary.get("passed", 0)
+        failed = summary.get("failed", 0)
+        total = summary.get("total", 0)
         score = passed * 2.5
-        logging.info(f"[{candidate_id}] {assignment_name}: Passed {passed}/{total}, Score: {score}")
+
+        logging.info(f"[{candidate_id}] {assignment_name}: Passed {passed}/{total}, Failed: {failed}, Score: {score}")
         return {
             "assignment": assignment_name,
             "status": "success",
             "passed": passed,
+            "failed": failed,
             "total": total,
             "score": score,
             "output": result.stdout
         }
-    except KeyError as ke:
-        logging.error(f"[{candidate_id}] Malformed test report for {assignment_name}: {ke}")
+    except Exception as e:
+        logging.error(f"[{candidate_id}] Unexpected error parsing test report: {e}")
         logging.debug(f"[{candidate_id}] Full test report:\n{json.dumps(report, indent=2)}")
         return {
             "assignment": assignment_name,
