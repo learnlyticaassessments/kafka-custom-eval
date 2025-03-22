@@ -49,6 +49,13 @@ def fetch_assignments_only(ip, local_path):
         logging.error(f"[{ip}] SCP failed: {e}")
         raise
 
+def log_eval_dir_contents(eval_dir, candidate_id):
+    logging.debug(f"[{candidate_id}] Contents of eval_dir ({eval_dir}):")
+    for root, dirs, files in os.walk(eval_dir):
+        for file in files:
+            rel_path = os.path.relpath(os.path.join(root, file), eval_dir)
+            logging.debug(f"[{candidate_id}] - {rel_path}")
+
 def evaluate_assignment(candidate_id, assignment_file, eval_dir):
     assignment_name = Path(assignment_file).stem
     test_file = f"test_{assignment_name}.py"
@@ -75,11 +82,19 @@ def evaluate_assignment(candidate_id, assignment_file, eval_dir):
         "--json-report",
         f"--json-report-file=report_{assignment_name}.json"
     ]
+
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=eval_dir)
     except subprocess.SubprocessError as e:
         logging.error(f"[{candidate_id}] Pytest subprocess failed: {e}")
-        raise
+        return {
+            "assignment": assignment_name,
+            "status": "error",
+            "score": 0,
+            "output": str(e)
+        }
+
+    log_eval_dir_contents(eval_dir, candidate_id)
 
     report_file = os.path.join(eval_dir, f"report_{assignment_name}.json")
     if not os.path.exists(report_file):
@@ -109,6 +124,7 @@ def evaluate_assignment(candidate_id, assignment_file, eval_dir):
         }
     except KeyError as ke:
         logging.error(f"[{candidate_id}] Malformed test report for {assignment_name}: {ke}")
+        logging.debug(f"[{candidate_id}] Full test report:\n{json.dumps(report, indent=2)}")
         return {
             "assignment": assignment_name,
             "status": "malformed_report",
@@ -123,11 +139,9 @@ def evaluate_candidate(candidate_id, assignments_dir):
     for assignment_file in os.listdir(assignments_dir):
         if assignment_file.endswith(".py"):
             with tempfile.TemporaryDirectory() as eval_dir:
-                # Create assignments dir
                 eval_assignments_dir = os.path.join(eval_dir, ASSIGNMENT_SUBDIR)
                 os.makedirs(eval_assignments_dir, exist_ok=True)
 
-                # Copy assignment
                 shutil.copy(
                     os.path.join(assignments_dir, assignment_file),
                     os.path.join(eval_assignments_dir, assignment_file)
@@ -137,6 +151,7 @@ def evaluate_candidate(candidate_id, assignments_dir):
                     result = evaluate_assignment(candidate_id, assignment_file, eval_dir)
                 except Exception as e:
                     logging.error(f"[{candidate_id}] Exception during test run for {assignment_file}: {e}")
+                    logging.debug(traceback.format_exc())
                     result = {
                         "assignment": Path(assignment_file).stem,
                         "status": "error",
