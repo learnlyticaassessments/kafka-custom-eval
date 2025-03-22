@@ -18,7 +18,7 @@ LOCAL_TESTS_DIR = os.path.join(os.getcwd(), "tests")
 
 # === LOGGING SETUP ===
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[logging.StreamHandler()]
 )
