@@ -56,6 +56,7 @@ def log_eval_dir_contents(eval_dir, candidate_id):
             rel_path = os.path.relpath(os.path.join(root, file), eval_dir)
             logging.debug(f"[{candidate_id}] - {rel_path}")
 
+
 def evaluate_assignment(candidate_id, assignment_file, eval_dir):
     assignment_name = Path(assignment_file).stem
     test_file = f"test_{assignment_name}.py"
@@ -66,7 +67,8 @@ def evaluate_assignment(candidate_id, assignment_file, eval_dir):
         return {
             "assignment": assignment_name,
             "status": "no_test",
-            "score": 0,
+            "total": 0,
+            "passed": 0,
             "output": ""
         }
 
@@ -90,11 +92,10 @@ def evaluate_assignment(candidate_id, assignment_file, eval_dir):
         return {
             "assignment": assignment_name,
             "status": "error",
-            "score": 0,
+            "total": 0,
+            "passed": 0,
             "output": str(e)
         }
-
-    log_eval_dir_contents(eval_dir, candidate_id)
 
     report_file = os.path.join(eval_dir, f"report_{assignment_name}.json")
     if not os.path.exists(report_file):
@@ -102,7 +103,8 @@ def evaluate_assignment(candidate_id, assignment_file, eval_dir):
         return {
             "assignment": assignment_name,
             "status": "failed",
-            "score": 0,
+            "total": 0,
+            "passed": 0,
             "output": result.stderr
         }
 
@@ -112,18 +114,15 @@ def evaluate_assignment(candidate_id, assignment_file, eval_dir):
     try:
         summary = report.get("summary", {})
         passed = summary.get("passed", 0)
-        failed = summary.get("failed", 0)
         total = summary.get("total", 0)
-        score = passed * 2.5
+        failed = summary.get("failed", 0)
 
-        logging.info(f"[{candidate_id}] {assignment_name}: Passed {passed}/{total}, Failed: {failed}, Score: {score}")
+        logging.info(f"[{candidate_id}] {assignment_name}: Passed {passed}/{total}")
         return {
             "assignment": assignment_name,
             "status": "success",
             "passed": passed,
-            "failed": failed,
             "total": total,
-            "score": score,
             "output": result.stdout
         }
     except Exception as e:
@@ -132,13 +131,16 @@ def evaluate_assignment(candidate_id, assignment_file, eval_dir):
         return {
             "assignment": assignment_name,
             "status": "malformed_report",
-            "score": 0,
+            "total": 0,
+            "passed": 0,
             "output": result.stdout
         }
 
 def evaluate_candidate(candidate_id, assignments_dir):
     logging.info(f"=== Evaluating {candidate_id} ===")
     results = []
+    total_tests = 0
+    total_passed = 0
 
     for assignment_file in os.listdir(assignments_dir):
         if assignment_file.endswith(".py"):
@@ -159,18 +161,23 @@ def evaluate_candidate(candidate_id, assignments_dir):
                     result = {
                         "assignment": Path(assignment_file).stem,
                         "status": "error",
-                        "score": 0,
+                        "passed": 0,
+                        "total": 0,
                         "output": str(e)
                     }
+
+                total_tests += result.get("total", 0)
+                total_passed += result.get("passed", 0)
                 results.append(result)
 
-    total_score = sum(r["score"] for r in results)
-    logging.info(f"[{candidate_id}] Total Score: {total_score}")
+    logging.info(f"[{candidate_id}] Total Passed: {total_passed}/{total_tests}")
     return {
         "candidate_id": candidate_id,
         "results": results,
-        "total_score": total_score
+        "total_tests": total_tests,
+        "total_passed": total_passed
     }
+
 
 def main():
     logging.info("=== Starting Evaluation ===")
